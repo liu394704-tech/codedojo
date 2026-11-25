@@ -71,7 +71,7 @@ h3{font-size:14px;margin:14px 0 8px;font-weight:600;color:var(--muted)}
 .ringwrap .rt{font-size:13px;color:var(--muted)}
 /* ---- 练习页双栏 ---- */
 .prac{display:grid;grid-template-columns:minmax(330px,2fr) 3fr;gap:16px;align-items:start}
-@media(max-width:920px){.prac{grid-template-columns:1fr}}
+@media(max-width:920px){.prac{grid-template-columns:1fr}.prac>div:last-child{order:-1}}
 .phead{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
 .chk{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid rgba(50,54,59,.4);cursor:pointer}
 .chk input{width:16px;height:16px;flex:none;margin-top:3px;accent-color:var(--good);cursor:pointer}
@@ -84,21 +84,28 @@ h3{font-size:14px;margin:14px 0 8px;font-weight:600;color:var(--muted)}
 .tbar i{display:block;height:100%;background:var(--accent);width:0%}
 .timeup{background:rgba(240,180,41,.12);border:1px solid var(--warn);color:var(--warn);padding:8px 12px;border-radius:8px;margin-top:8px;display:none;font-size:13px}
 /* ---- 代码阅读器 + 批注 ---- */
-.codebox{background:#101113;border:1px solid var(--border);border-radius:var(--radius);overflow:auto;max-height:560px;font-family:var(--mono);font-size:12.5px;line-height:1.55}
+.codebox{background:#101113;border:1px solid var(--border);border-radius:var(--radius);overflow:auto;max-height:64vh;font-family:var(--mono);font-size:12.5px;line-height:1.6}
 .codebox table{border-collapse:collapse;width:100%}
 .codebox td{padding:0 10px 0 0;white-space:pre-wrap;vertical-align:top}
-.codebox .ln{color:var(--faint);text-align:right;user-select:none;width:1%;min-width:44px;padding-left:14px;cursor:pointer}
-.codebox .ln:hover{color:var(--warn)}
-.codebox tr:hover{background:rgba(108,140,255,.05)}
+.codebox .ln{color:var(--faint);text-align:right;user-select:none;width:1%;min-width:44px;padding-left:14px}
+.codebox tr{cursor:pointer}
+.codebox tr:hover{background:rgba(108,140,255,.08)}
 .codebox tr.hlq{background:rgba(240,180,41,.09)}
 .codebox tr.hli{background:rgba(76,195,138,.09)}
 .codebox tr.hlb{background:rgba(229,72,77,.10)}
 .codebox tr.hln{background:rgba(108,140,255,.08)}
 .k{color:#7aa2f7}.s{color:#9ece6a}.c{color:#565f89;font-style:italic}.n{color:#ff9e64}
-.annrow td{padding:8px 12px;background:var(--panel2)}
-.annrow .hd2{display:flex;gap:8px;align-items:center;margin-bottom:6px;font-size:12px;color:var(--muted)}
+/* ---- 批注浮层 ---- */
+.pop{position:fixed;z-index:100;width:300px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 14px;box-shadow:0 12px 40px rgba(0,0,0,.55)}
+.poph{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.poph .pl{font-family:var(--mono);color:var(--warn);font-size:13px;font-weight:600}
+.poph .pf{font-family:var(--mono);color:var(--accent);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.poph .popx{margin-left:auto;cursor:pointer;color:var(--faint);flex:none}
+.poph .popx:hover{color:var(--text)}
+.popns{max-height:150px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:2px 10px;margin-bottom:8px}
 .exnote{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px dashed rgba(50,54,59,.6);font-size:12.5px}
-.exnote .tx{flex:1;color:var(--text)}
+.exnote:last-child{border-bottom:none}
+.exnote .tx{flex:1;color:var(--text);word-break:break-word}
 .exnote .del{color:var(--faint);cursor:pointer;flex:none}
 .exnote .del:hover{color:var(--bad)}
 .ntypes{display:flex;gap:6px;margin:6px 0}
@@ -353,11 +360,12 @@ function highlight(src){
  return out.split("\n");
 }
 function codeRows(path){
- const notes=S.notes[path]||[];const noted={};notes.forEach(n=>{noted[n.line]=(noted[n.line]||[]);noted[n.line].push(n.type)});
+ const notes=S.notes[path]||[];const noted={};notes.forEach(n=>{noted[n.line]=(noted[n.line]||[]);noted[n.line].push(n)});
  return highlight(CODE_CACHE[path]||"").map((l,i)=>{
   const ln=i+1,ns=noted[ln]||[];
-  const mark=ns.length?ns.some(t=>t==="b")?" ●":ns.length>1?" ◆":" ●":"";
-  return `<tr id="L${ln}" class="${ns.map(t=>"hl"+t).join(" ")}"><td class="ln" onclick="annOpen('${esc(path)}',${ln})" title="点击写批注">${ln}${mark}</td><td>${l||" "}</td></tr>`;
+  const dot=ns.length?`<span style="color:${NTYPE[ns[0].type].c}">●</span>`:"";
+  const ttl=ns.length?ns.map(n=>NTYPE[n.type].n+"："+n.text).join("\n"):"点击写批注";
+  return `<tr id="L${ln}" class="${ns.map(n=>"hl"+n.type).join(" ")}" onclick="annPop('${esc(path)}',${ln},event)" title="${esc(ttl)}"><td class="ln">${ln}${dot}</td><td>${l||" "}</td></tr>`;
  }).join("");
 }
 async function loadCode(path,boxId,focusLine){
@@ -373,37 +381,55 @@ async function loadCode(path,boxId,focusLine){
 function jumpLine(ln){const el=document.getElementById("L"+ln);if(!el)return;
  el.scrollIntoView({block:"center"});el.classList.remove("flash");void el.offsetWidth;el.classList.add("flash")}
 
-/* ================= 批注编辑 ================= */
-function annOpen(path,ln){
- const tr=document.getElementById("L"+ln);if(!tr)return;
- const old=document.querySelector(".annrow");if(old)old.remove();
- if(annOpen._last===ln+"|"+path){annOpen._last=null;return}
- annOpen._last=ln+"|"+path;
+/* ================= 批注浮层 ================= */
+let popEl=null,popKey=null;
+function lineFunc(path,ln){
+ const m=((CODE_CACHE[path]||"").split("\n")[ln-1]||"").match(/^\s*(?:async\s+)?(?:def|class)\s+(\w+)/);
+ return m?m[1]:null}
+function annPop(path,ln,e){
+ e.stopPropagation();
+ if(window.getSelection().toString())return;
+ const key=path+"|"+ln;
+ if(popKey===key){closePop();return}
+ showPop(path,ln)}
+function showPop(path,ln){
+ closePop();
  const notes=(S.notes[path]||[]).filter(n=>n.line===ln);
- const row=document.createElement("tr");row.className="annrow";
- row.innerHTML=`<td colspan="2">
-  <div class="hd2">第 ${ln} 行的批注 ${notes.length?`（${notes.length} 条）`:""}<span style="margin-left:auto;cursor:pointer;color:var(--faint)" onclick="this.closest('.annrow').remove();annOpen._last=null">收起 ✕</span></div>
-  ${notes.map(n=>`<div class="exnote"><span style="color:${NTYPE[n.type].c};flex:none">●</span><span class="tx">${esc(n.text)}</span><span class="del" onclick="delNote('${esc(path)}',${ln},'${n.ts}')">删除</span></div>`).join("")}
+ const fn=lineFunc(path,ln);
+ popEl=document.createElement("div");popEl.className="pop";
+ popEl.innerHTML=`
+  <div class="poph"><span class="pl">L${ln}</span>${fn?`<span class="pf">def ${esc(fn)}</span>`:""}<span class="popx" onclick="closePop()">✕</span></div>
+  ${notes.length?`<div class="popns">${notes.map(n=>`<div class="exnote"><span style="color:${NTYPE[n.type].c};flex:none">●</span><span class="tx">${esc(n.text)}</span><span class="del" onclick="delNote('${esc(path)}',${ln},'${n.ts}')">删除</span></div>`).join("")}</div>`:""}
   <div class="ntypes" id="nt-sel">${["q","i","b","n"].map(t=>`<button data-t="${t}" class="${t==="q"?"on":""}" onclick="annType(this)">${NTYPE[t].n}</button>`).join("")}</div>
-  <div style="display:flex;gap:8px"><input id="ann-txt" placeholder="像读文献一样，在这行旁边写下你的想法…" onkeydown="if(event.key==='Enter')annSave('${esc(path)}',${ln})"><button class="btn small" onclick="annSave('${esc(path)}',${ln})">保存</button></div>
- </td>`;
- tr.after(row);
- row.querySelector("#ann-txt").focus();
-}
-function annType(btn){row=btn.parentElement;row.querySelectorAll("button").forEach(b=>b.classList.remove("on"));btn.classList.add("on")}
+  <input id="ann-txt" placeholder="在这行旁边写下想法，Enter 保存" onkeydown="if(event.key==='Enter')annSave('${esc(path)}',${ln});if(event.key==='Escape')closePop()">
+  <button class="btn small" style="margin-top:8px;width:100%" onclick="annSave('${esc(path)}',${ln})">保存批注</button>`;
+ document.body.appendChild(popEl);
+ popKey=path+"|"+ln;
+ const tr=document.getElementById("L"+ln);
+ if(tr){const r=tr.getBoundingClientRect();
+  popEl.style.left=Math.max(12,Math.min(r.left+40,innerWidth-316))+"px";
+  let top=r.bottom+8;
+  if(top+popEl.offsetHeight>innerHeight-10)top=Math.max(10,r.top-popEl.offsetHeight-8);
+  popEl.style.top=top+"px"}
+ else{popEl.style.left=(innerWidth/2-150)+"px";popEl.style.top="40vh"}
+ popEl.querySelector("#ann-txt").focus()}
+function closePop(){if(popEl){popEl.remove();popEl=null}popKey=null}
+document.addEventListener("click",e=>{if(popEl&&!popEl.contains(e.target)&&!e.target.closest("tr[id^='L']"))closePop()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closePop()});
+function annType(btn){const row=btn.parentElement;row.querySelectorAll("button").forEach(b=>b.classList.remove("on"));btn.classList.add("on")}
 function annSave(path,ln){
- const txt=document.getElementById("ann-txt").value.trim();if(!txt){toast("批注内容不能为空");return}
+ const inp=document.getElementById("ann-txt");const txt=inp.value.trim();if(!txt){toast("批注内容不能为空");return}
  const t=document.querySelector("#nt-sel button.on").dataset.t;
  if(!S.notes[path])S.notes[path]=[];
  S.notes[path].push({line:ln,type:t,text:txt,ts:Date.now()});
- save();rerenderCode(path,ln);toast("批注已保存")}
-function delNote(path,ln,ts){S.notes[path]=S.notes[path].filter(n=>!(n.line===ln&&String(n.ts)===ts));save();rerenderCode(path,ln)}
+ save();closePop();rerenderCode(path,ln);toast("批注已保存")}
+function delNote(path,ln,ts){S.notes[path]=S.notes[path].filter(n=>!(n.line===ln&&String(n.ts)===ts));save();rerenderCode(path,ln);showPop(path,ln)}
 function rerenderCode(path,ln){
  const box=document.getElementById("code-main");const wrap=box.closest(".codebox");
  const st=wrap.scrollTop;
  box.innerHTML=codeRows(path);
  wrap.scrollTop=st;
- annOpen._last=null;
+ closePop();
  if(ln)jumpLine(ln);
  renderSideNotes(path);
  const stats=document.getElementById("ann-count");if(stats)stats.textContent=(S.notes[path]||[]).length+" 条批注";
@@ -413,7 +439,7 @@ function renderSideNotes(path){
  const notes=(S.notes[path]||[]).slice().sort((a,b)=>a.line-b.line);
  el.innerHTML=notes.length?notes.map(n=>`<div class="nrow" onclick="jumpLine(${n.line})">
   <span class="gl">L${n.line}</span><span style="color:${NTYPE[n.type].c};flex:none">●</span><span class="gtxt">${esc(n.text)}</span>
- </div>`).join(""):'<div class="empty">点击行号即可写批注</div>';
+ </div>`).join(""):'<div class="empty">点击左侧任意代码行，即可在行旁写批注</div>';
 }
 
 /* ================= 今日 ================= */
@@ -547,7 +573,7 @@ function openPractice(f,dayId,focusLine){
      <h2 style="margin:0">源码批注</h2><span class="nc" id="ann-count">${(S.notes[path]||[]).length} 条批注</span>
      <a href="${f.gh}" target="_blank" style="font-size:12px;margin-left:auto">GitHub ↗</a>
     </div>
-    <div class="legend">${Object.entries(NTYPE).map(([k,t])=>`<span><i class="dot" style="background:${t.c}"></i>${t.n}</span>`).join("")}<span class="note" style="margin-left:auto">点击行号写批注</span></div>
+    <div class="legend">${Object.entries(NTYPE).map(([k,t])=>`<span><i class="dot" style="background:${t.c}"></i>${t.n}</span>`).join("")}<span class="note" style="margin-left:auto">点击任意一行写批注</span></div>
     <div class="codebox"><table><tbody id="code-main"></tbody></table></div>
    </div>
    <div class="card"><h3>本文件批注（点击跳转）</h3><div id="side-notes"></div></div>
