@@ -364,8 +364,8 @@ async function loadCode(path,boxId,focusLine){
  const box=document.getElementById(boxId);
  if(!CODE_CACHE[path]){
   box.innerHTML='<tr><td class="ln">…</td><td>加载中</td></tr>';
-  try{const r=await fetch(path);if(!r.ok)throw 0;CODE_CACHE[path]=await r.text()}
-  catch(e){box.innerHTML=`<tr><td class="ln">!</td><td>无法读取 ${esc(path)} — 本地使用请从 code-reading-dojo 目录启动服务器（双击 开始训练.command）</td></tr>`;return}
+  try{const r=await fetch("../"+path);if(!r.ok)throw 0;CODE_CACHE[path]=await r.text()}
+  catch(e){box.innerHTML=`<tr><td class="ln">!</td><td>无法读取 ${esc(path)} — 请刷新重试；本地使用请从 code-reading-dojo 目录启动服务器（双击 开始训练.command）</td></tr>`;return}
  }
  box.innerHTML=codeRows(path);
  if(focusLine){jumpLine(focusLine)}
