@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>代码道场 · CodeDojo</title>
+<style>
+:root{
+  --bg:#141517; --panel:#1d1f23; --panel2:#232629; --border:#32363b;
+  --text:#e8e8e6; --muted:#9a9a94; --faint:#6e6e68;
+  --accent:#6c8cff; --accent-dim:#39466e;
+  --good:#4cc38a; --warn:#f0b429; --bad:#e5484d;
+  --radius:12px; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.6}
+a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+button{font-family:inherit;cursor:pointer;border:none;border-radius:8px;font-size:13px}
+input,textarea,select{font-family:inherit;font-size:13px;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 10px;width:100%;outline:none}
+input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+textarea{resize:vertical;min-height:60px}
+.wrap{max-width:960px;margin:0 auto;padding:0 20px 60px}
+header{position:sticky;top:0;z-index:50;background:rgba(20,21,23,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+.hd{max-width:960px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.logo{font-weight:600;font-size:16px;letter-spacing:.5px}
+.logo span{color:var(--accent)}
+nav{display:flex;gap:4px;flex:1;flex-wrap:wrap}
+nav button{background:transparent;color:var(--muted);padding:6px 12px;border-radius:8px}
+nav button.active{background:var(--panel2);color:var(--text)}
+nav button:hover:not(.active){color:var(--text)}
+.streak{display:flex;gap:14px;align-items:center;font-size:13px;color:var(--muted)}
+.streak b{color:var(--warn);font-size:15px}
+.view{display:none;padding-top:24px}
+.view.active{display:block}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-bottom:16px}
+h1{font-size:20px;margin-bottom:6px;font-weight:600}
+h2{font-size:16px;margin-bottom:12px;font-weight:600}
+h3{font-size:14px;margin:14px 0 8px;font-weight:600;color:var(--muted)}
+.sub{color:var(--muted);font-size:13px}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:1fr 1fr} .g3{grid-template-columns:repeat(3,1fr)} .g4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:720px){.g2,.g3,.g4{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){.g2,.g3,.g4{grid-template-columns:1fr}}
+.stat{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px}
+.stat .num{font-size:24px;font-weight:600;color:var(--accent)}
+.stat .lbl{font-size:12px;color:var(--muted);margin-top:2px}
+.btn{background:var(--accent);color:#fff;padding:9px 18px;font-weight:500}
+.btn:hover{filter:brightness(1.1)}
+.btn.ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn.ghost:hover{border-color:var(--accent)}
+.btn.small{padding:5px 12px;font-size:12px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.days{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.daycard{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px;cursor:pointer;transition:border-color .15s}
+.daycard:hover{border-color:var(--accent)}
+.daycard .d{font-size:12px;color:var(--faint)}
+.daycard .t{font-size:13px;margin:4px 0;font-weight:500}
+.daycard .done{color:var(--good);font-size:12px}
+.daycard.now{border-color:var(--warn)}
+.week{display:flex;gap:6px;margin:10px 0}
+.week i{flex:1;height:6px;border-radius:3px;background:var(--panel2)}
+.week i.done{background:var(--good)} .week i.now{background:var(--warn)}
+/* 计时器 */
+.timer{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.timer .disp{font-family:var(--mono);font-size:34px;font-weight:600;min-width:110px}
+.timer .disp.hot{color:var(--warn)}
+.tbar{flex:1;min-width:120px;height:8px;background:var(--panel2);border-radius:4px;overflow:hidden}
+.tbar i{display:block;height:100%;background:var(--accent);width:0%}
+.timeup{background:rgba(240,180,41,.12);border:1px solid var(--warn);color:var(--warn);padding:10px 14px;border-radius:8px;margin-top:10px;display:none}
+/* 代码阅读器 */
+.codebox{background:#101113;border:1px solid var(--border);border-radius:var(--radius);overflow:auto;max-height:520px;font-family:var(--mono);font-size:12.5px;line-height:1.55}
+.codebox table{border-collapse:collapse;width:100%}
+.codebox td{padding:0 10px 0 0;white-space:pre;vertical-align:top}
+.codebox .ln{color:var(--faint);text-align:right;user-select:none;width:1%;padding-left:14px}
+.codebox tr:hover{background:rgba(108,140,255,.06)}
+.k{color:#7aa2f7}.s{color:#9ece6a}.c{color:#565f89;font-style:italic}.n{color:#ff9e64}.d{color:#bb9af7}
+/* 问答 */
+.qa{border:1px solid var(--border);border-radius:8px;margin-bottom:10px;overflow:hidden}
+.qa .q{padding:12px 14px;background:var(--panel2);display:flex;gap:10px;cursor:pointer}
+.qa .q b{color:var(--accent);font-family:var(--mono)}
+.qa .a{padding:12px 14px;display:none;border-top:1px solid var(--border)}
+.qa.open .a{display:block}
+.qa .q::after{content:"展开";margin-left:auto;color:var(--faint);font-size:12px}
+.qa.open .q::after{content:"收起"}
+/* 表格 */
+table.plain{width:100%;border-collapse:collapse;font-size:13px}
+table.plain th{text-align:left;color:var(--muted);font-weight:500;padding:8px 10px;border-bottom:1px solid var(--border)}
+table.plain td{padding:8px 10px;border-bottom:1px solid rgba(50,54,59,.5);vertical-align:top}
+/* 清单 */
+.chk{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid rgba(50,54,59,.4);cursor:pointer}
+.chk input{width:16px;height:16px;flex:none;margin-top:3px;accent-color:var(--good);cursor:pointer}
+.chk span.on{color:var(--faint);text-decoration:line-through}
+/* 卡片 */
+.fcard{background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;padding:12px 14px;margin-bottom:10px}
+.fcard.master{border-left-color:var(--good);opacity:.65}
+.fcard .top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.fcard .topic{font-weight:600}
+.fcard .date{color:var(--faint);font-size:12px;margin-left:auto}
+.fcard .desc{margin-top:6px;color:var(--muted)}
+.fcard .src{margin-top:4px;font-size:12px;color:var(--faint)}
+.fcard .ops{margin-top:8px;display:flex;gap:8px}
+.tag{font-size:11px;padding:2px 8px;border-radius:99px;background:var(--panel2);color:var(--muted)}
+.tag.good{color:var(--good)} .tag.warn{color:var(--warn)} .tag.bad{color:var(--bad)}
+/* toast */
+#toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--panel2);border:1px solid var(--good);color:var(--text);padding:10px 22px;border-radius:10px;opacity:0;transition:.25s;z-index:99;pointer-events:none}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.back{margin-bottom:14px}
+.pill{display:inline-block;background:var(--panel2);border-radius:99px;padding:2px 10px;font-size:12px;color:var(--muted);margin-right:6px}
+.links a{display:block;padding:4px 0}
+hr{border:none;border-top:1px solid var(--border);margin:14px 0}
+.note{font-size:12px;color:var(--faint)}
+.empty{color:var(--faint);text-align:center;padding:30px 0}
+</style>
+</head>
+<body>
+<header><div class="hd">
+  <div class="logo">代码<span>道场</span></div>
+  <nav id="nav">
+    <button data-v="home" class="active">今日</button>
+    <button data-v="camp">训练营</button>
+    <button data-v="free">自由训练</button>
+    <button data-v="cards">卡片本</button>
+    <button data-v="bugs">病灶笔记</button>
+    <button data-v="road">路线与资料</button>
+  </nav>
+  <div class="streak"><span>🔥 连续 <b id="streakN">0</b> 天</span><span id="doneN"></span></div>
+</div></header>
+
+<div class="wrap">
+
+<!-- ============ 今日 ============ -->
+<section class="view active" id="v-home"></section>
+
+<!-- ============ 训练营 ============ -->
+<section class="view" id="v-camp"></section>
+
+<!-- ============ 自由训练 ============ -->
+<section class="view" id="v-free"></section>
+
+<!-- ============ 卡片本 ============ -->
+<section class="view" id="v-cards"></section>
+
+<!-- ============ 病灶笔记 ============ -->
+<section class="view" id="v-bugs"></section>
+
+<!-- ============ 路线与资料 ============ -->
+<section class="view" id="v-road"></section>
+
+</div>
+<div id="toast"></div>
+
+<script>
+/* ================= 数据 ================= */
+const DAYS=[
+{id:1,file:"../requests/src/requests/hooks.py",gh:"https://github.com/psf/requests/blob/main/src/requests/hooks.py",title:"requests/hooks.py",lines:48,focus:"读真代码第一课：小而精",
+ brief:"整个 requests 钩子系统只有 48 行。今天的目标不是看懂多少，而是走完一遍完整的训练流程：限时读、闭卷写、对照、记卡片。",
+ local:"code-reading-dojo/requests/src/requests/hooks.py",
+ qs:[
+ {q:"default_hooks() 一行就完事，它返回什么？这个写法叫什么？",a:"返回 <code>{\"response\": []}</code>，写法是 <b>dict comprehension</b>（<code>{event: [] for event in HOOKS}</code>）——以后加新 hook 类型时这里不用改。"},
+ {q:"dispatch_hook 里为什么有 if isinstance(hook_list, Callable): hook_list = [hook_list]？",a:"<b>归一化</b>：API 允许用户传单个函数或函数列表，先统一成 list，后面只写一个循环。好接口都这么消化用户输入的多样性。"},
+ {q:"第 46 行为什么是 if _hook_data is not None 而不是 if _hook_data？",a:"<code>is not None</code> 区分「hook 返回了空值」和「hook 返回了 None」。用 <code>if _hook_data:</code> 的话，hook 返回 \"\"、0、空对象都会被当成「没返回」，语义就错了。这是 is None 惯用法的标准场景。"},
+ {q:"hooks or {} 是什么惯用法？有什么坑？",a:"<code>or</code> 的短路默认值：<code>hooks</code> 为 None 时取 {}。坑：任何 falsy 值（空 dict、0、空串）都会触发兜底而不只是 None，所以只有「空 = 无」的语义下才敢这么写。"}]},
+{id:2,file:"../requests/src/requests/api.py",gh:"https://github.com/psf/requests/blob/main/src/requests/api.py",title:"requests/api.py",lines:180,focus:"单一入口 + 糖函数",
+ brief:"跳过 docstring，代码本体不到 40 行。看完你会发现「干净」的本质是克制。",
+ local:"code-reading-dojo/requests/src/requests/api.py",
+ qs:[
+ {q:"整个文件的设计是什么？get/post/put... 和 request() 是什么关系？",a:"<b>单一入口 + 糖函数</b>：所有方法都是 request() 的语法糖，request() 又只是包了一层 Session。190 行里真代码 40 行。"},
+ {q:"第 70 行为什么用 with sessions.Session()？注释说了什么代价？",a:"with 保证 Session 关闭、不留悬挂 socket。注释原话：会触发 ResourceWarning、看起来像内存泄漏。<b>资源管理是 Python 审查的第一类考点。</b>"},
+ {q:"head() 里 kwargs.setdefault(\"allow_redirects\", False) 和直接写死 False 差在哪？",a:"setdefault 只在用户<b>没传</b>时给默认，用户显式传 allow_redirects=True 会保留；写死会吞掉用户意图——AI 生成代码里「吞掉用户输入」极常见。"},
+ {q:"签名里的 **kwargs: Unpack[_t.RequestKwargs] 是给谁看的？",a:"给 IDE / mypy 看的类型化 kwargs（TypedDict + Unpack），运行时零作用。认识它，别被吓到。"},
+ {q:"get() 的 params 默认值为什么是 None 而不是 {}？",a:"<b>可变默认参数陷阱</b>：{} 默认值会被所有调用共享，一次原地修改就污染后续调用。Python 最著名的坑，也是 AI 代码病灶清单常客。"}]},
+{id:3,file:"../requests/src/requests/status_codes.py",gh:"https://github.com/psf/requests/blob/main/src/requests/status_codes.py",title:"status_codes.py + structures.py",lines:128,focus:"属性访问的魔法",
+ brief:"主读 status_codes.py（128 行），再看 structures.py 里第 96 行起的 LookupDict（约 35 行）。",
+ local:"code-reading-dojo/requests/src/requests/structures.py",
+ qs:[
+ {q:"codes.ok 这种属性访问是怎么变成 200 的？（线索：LookupDict.__getattr__）",a:"LookupDict 继承 dict 并实现 <code>__getattr__</code>：属性访问查不到时，去自身键值里找并返回。<b>「看起来是属性，其实是查表」</b>——很多框架的「魔法」就是一层 dunder 方法，读懂它魔法就消失了。"},
+ {q:"看 _init() 如何往 LookupDict 里灌数据。为什么用函数灌而不是写在类里？",a:"自评要点：数据初始化集中在一个函数里执行，类定义保持干净；这是「类是骨架、数据是内容」的常见组织法。能说出自己的理解即可。"}]},
+{id:4,file:"../requests/src/requests/exceptions.py",gh:"https://github.com/psf/requests/blob/main/src/requests/exceptions.py",title:"requests/exceptions.py",lines:162,focus:"异常也是对象",
+ brief:"先在纸上画出异常类的继承树（5 分钟），再读代码对照。",
+ local:"code-reading-dojo/requests/src/requests/exceptions.py",
+ qs:[
+ {q:"RequestException 的 __init__ 比普通异常多做了什么？",a:"自评要点：接收并保存 response 参数（默认 None）——把「出错时的现场」挂在异常对象上，让上层拿到异常时能直接访问响应。<code>__init__</code> 还调用了 super() 传 message。"},
+ {q:"为什么 HTTPError 要单独接 response？",a:"自评要点：HTTP 状态码错误是「有响应的错误」，没 response 信息这个异常就废了；而 Timeout / ConnectionError 是「没有响应的错误」。异常设计反映了错误的分类学。"}]},
+{id:5,file:"../requests/src/requests/__init__.py",gh:"https://github.com/psf/requests/blob/main/src/requests/__init__.py",title:"requests/__init__.py",lines:219,focus:"一个包的门面",
+ brief:"读大工程第一步永远是读 __init__.py。数一数用户能 import 的名字有几个。",
+ local:"code-reading-dojo/requests/src/requests/__init__.py",
+ qs:[
+ {q:"这个文件控制了什么？from requests import get, Session 的「魔法」在哪？",a:"自评要点：<code>from .api import get, post, ...</code> 等导入决定导出面；<code>__all__</code>（如果有）约束 star-import；还可以看有没有 <code>__getattr__</code> 懒加载。<b>__init__.py 是包的门面：谁被导出、什么顺序、暴露多少，全在这里。</b>"},
+ {q:"注意文件里 import 的顺序和分组。有没有为了避免循环导入做的处理？",a:"自评要点：看导入分组（标准库 / 本地模块）与顺序；requests 用局部导入等方式解耦——能识别「这行 import 为什么写在这里」就开始有工程嗅觉了。"}]},
+{id:6,file:"../requests/src/requests/sessions.py",gh:"https://github.com/psf/requests/blob/main/src/requests/sessions.py",title:"请求的一生（长训练）",lines:920,focus:"端到端链路追踪",
+ brief:"周末 60 分钟长训练。先不看代码，画出 requests.get(url) 到 HTTP 发出的链路图，然后沿代码走一遍对照。左侧阅读器已定位 sessions.py，需要切换就用上方文件选择。",
+ local:"code-reading-dojo/requests/src/requests/sessions.py",
+ chain:["api.get()（api.py 第 74 行）","api.request()（api.py 第 24 行）—— with Session() 创建会话","Session.request()（sessions.py 第 557 行）","Session.prepare_request()（第 511 行）—— Request 变 PreparedRequest","Session.send()（第 752 行）","HTTPAdapter.send()（adapters.py 第 634 行）—— 真正发出 HTTP"],
+ qs:[
+ {q:"对照检查：你画的链路包含哪些跳？漏了哪一跳？",a:"参考链路：<code>api.get → api.request() → Session.request() → prepare_request() → Session.send() → HTTPAdapter.send()</code>。中间 Request → PreparedRequest 这一跳最容易漏。"},
+ {q:"Session 继承了 SessionRedirectMixin，HTTPAdapter 继承 BaseAdapter。为什么要这样拆？",a:"<b>Mixin</b>：把「重定向处理」独立成可复用的混入类；<b>BaseAdapter</b> 是抽象基类（send 抛 NotImplementedError），定义「适配器必须实现什么」——这是 Python 版的 interface，Week 4 读 Java 时会看到它的显式形态。"}]},
+{id:7,file:null,title:"休息日 · 补卡片",lines:0,focus:"回顾比新学重要",
+ brief:"今天不读新代码。把本周的语法卡片全部过一遍：还说不清楚的挑出来，查一次资料，更新卡片。复习完点「完成」。",
+ local:null,
+ qs:[{q:"自检：本周的卡片里，哪几张我复述不出来？",a:"把复述不出来的卡片标回「未掌握」，并只查这几张（官方 Tutorial / Fluent Python 对应章节，见「路线与资料」）。漏掉的比读过的值钱。"}]}
+];
+
+const FREE_FILES=[
+ {p:"requests/src/requests/hooks.py",l:48,d:"入门",gh:"https://github.com/psf/requests/blob/main/src/requests/hooks.py"},
+ {p:"requests/src/requests/status_codes.py",l:128,d:"入门",gh:"https://github.com/psf/requests/blob/main/src/requests/status_codes.py"},
+ {p:"requests/src/requests/structures.py",l:130,d:"入门",gh:"https://github.com/psf/requests/blob/main/src/requests/structures.py"},
+ {p:"requests/src/requests/exceptions.py",l:162,d:"入门",gh:"https://github.com/psf/requests/blob/main/src/requests/exceptions.py"},
+ {p:"requests/src/requests/api.py",l:180,d:"入门",gh:"https://github.com/psf/requests/blob/main/src/requests/api.py"},
+ {p:"requests/src/requests/__init__.py",l:219,d:"入门",gh:"https://github.com/psf/requests/blob/main/src/requests/__init__.py"},
+ {p:"requests/src/requests/auth.py",l:354,d:"进阶",gh:"https://github.com/psf/requests/blob/main/src/requests/auth.py"},
+ {p:"requests/src/requests/cookies.py",l:625,d:"进阶",gh:"https://github.com/psf/requests/blob/main/src/requests/cookies.py"},
+ {p:"flask/src/flask/signals.py",l:17,d:"入门",gh:"https://github.com/pallets/flask/blob/main/src/flask/signals.py"},
+ {p:"flask/src/flask/globals.py",l:77,d:"入门",gh:"https://github.com/pallets/flask/blob/main/src/flask/globals.py"},
+ {p:"flask/src/flask/logging.py",l:79,d:"入门",gh:"https://github.com/pallets/flask/blob/main/src/flask/logging.py"},
+ {p:"flask/src/flask/views.py",l:191,d:"进阶",gh:"https://github.com/pallets/flask/blob/main/src/flask/views.py"},
+ {p:"flask/src/flask/config.py",l:367,d:"进阶",gh:"https://github.com/pallets/flask/blob/main/src/flask/config.py"},
+ {p:"flask/src/flask/sessions.py",l:385,d:"进阶",gh:"https://github.com/pallets/flask/blob/main/src/flask/sessions.py"},
+ {p:"click/src/click/__init__.py",l:144,d:"进阶",gh:"https://github.com/pallets/click/blob/main/src/click/__init__.py"},
+ {p:"click/src/click/exceptions.py",l:378,d:"进阶",gh:"https://github.com/pallets/click/blob/main/src/click/exceptions.py"},
+ {p:"click/src/click/decorators.py",l:621,d:"进阶",gh:"https://github.com/pallets/click/blob/main/src/click/decorators.py"},
+ {p:"requests/src/requests/adapters.py",l:748,d:"挑战",gh:"https://github.com/psf/requests/blob/main/src/requests/adapters.py"},
+ {p:"requests/src/requests/sessions.py",l:920,d:"挑战",gh:"https://github.com/psf/requests/blob/main/src/requests/sessions.py"},
+ {p:"flask/src/flask/ctx.py",l:540,d:"挑战",gh:"https://github.com/pallets/flask/blob/main/src/flask/ctx.py"},
+ {p:"flask/src/flask/helpers.py",l:679,d:"挑战",gh:"https://github.com/pallets/flask/blob/main/src/flask/helpers.py"},
+ {p:"httpx/httpx/_api.py",l:438,d:"进阶",gh:"https://github.com/encode/httpx/blob/master/httpx/_api.py"},
+ {p:"httpx/httpx/_client.py",l:2019,d:"挑战",gh:"https://github.com/encode/httpx/blob/master/httpx/_client.py"},
+ {p:"flask/src/flask/app.py",l:1686,d:"挑战",gh:"https://github.com/pallets/flask/blob/main/src/flask/app.py"},
+ {p:"click/src/click/core.py",l:4018,d:"挑战",gh:"https://github.com/pallets/click/blob/main/src/click/core.py"}
+];
+
+const BUG_PATTERNS=["API 幻觉 — 方法/参数看着合理但不存在或版本不对（对不上官方文档就跑一下）",
+"错误吞掉 — except Exception: pass、宽泛捕获、不打日志",
+"隐性状态突变 — 可变默认参数、原地改共享 dict/list",
+"「演示级正确」 — happy path 对，错误路径全断（输入为空/None/超长时走哪？）",
+"边界 — off-by-one、None 传播、空集合",
+"异步错误 — async 里调阻塞函数、漏 await",
+"安全 — 注入、硬编码密钥、路径拼接",
+"架构漂移 — AI 迭代几轮后分层乱掉（service 里写 SQL、循环 import）"];
+
+const ROADMAP=[
+ {w:1,t:"requests 小文件（训练营 Day 1–7）",g:"适应真代码，建立每日节奏"},
+ {w:2,t:"requests 中段：structures → auth → cookies 节选 → sessions 核心段",g:"读完一条完整链路"},
+ {w:3,t:"flask：signals → globals → views → config → ctx（难点，慢慢啃）",g:"看懂框架分层"},
+ {w:4,t:"click decorators + core 节选；Java 插入：Spring Petclinic + JDK ThreadPoolExecutor",g:"装饰器工厂 + OOP 骨架"},
+ {w:5,t:"httpx：_api → _models 节选 → _client 的 async 部分",g:"对照 requests 理解 async"},
+ {w:6,t:"病灶周：AI 生成代码限时找茬",g:"从读者切换到审查者"},
+ {w:7,t:"实战：读 fastapi / pydantic 的 GitHub PR",g:"看维护者怎么 review"},
+ {w:8,t:"实战：自己的项目当靶场（AI 生成、你来审）",g:"迁移到真实工作流"}];
+
+const RESOURCES=[
+ {g:"语法补给站（遇到才查，一查一卡片）",items:[
+  ["推导式、解包、*args/**kwargs","https://docs.python.org/zh-cn/3/tutorial/","官方 Tutorial 第 4、5 章"],
+  ["装饰器、闭包","https://docs.python.org/zh-cn/3/library/functools.html","Fluent Python 第 7 章 / functools 文档"],
+  ["生成器 / yield","https://docs.python.org/zh-cn/3/tutorial/classes.html#generators","Fluent Python 第 9 章"],
+  ["is None / falsy / 可变默认参数","https://docs.python.org/zh-cn/3/reference/datamodel.html","Fluent Python 第 8 章（坑最全）"],
+  ["async / await","https://docs.python.org/zh-cn/3/library/asyncio.html","官方 asyncio 文档开头"],
+  ["类型注解 / Unpack / Protocol","https://docs.python.org/zh-cn/3/library/typing.html","官方 typing 文档"],
+  ["with / 上下文管理器","https://docs.python.org/zh-cn/3/library/contextlib.html","contextlib 文档开头"],
+  ["dunder 方法（__getattr__ 等）","https://docs.python.org/zh-cn/3/reference/datamodel.html","官方数据模型，按名字查"]]},
+ {g:"训练场项目",items:[
+  ["requests — Pythonic 教科书","https://github.com/psf/requests","GitHub 50k+ star，API 设计示范"],
+  ["flask — 工程规范典范","https://github.com/pallets/flask","Pallets 社区，lint/类型/文档纪律"],
+  ["click — 装饰器设计典范","https://github.com/pallets/click","Armin Ronacher 的 CLI 库"],
+  ["httpx — 现代类型注解 + async","https://github.com/encode/httpx","encode 社区，requests 的现代版"]]},
+ {g:"进阶书（阶段 3 之后再碰）",items:[
+  ["A Philosophy of Software Design","https://book.douban.com/subject/35188402/","Ousterhout，判断复杂度从哪来"],
+  ["Refactoring（重构）","https://book.douban.com/subject/4262627/","Fowler，当 code smell 字典查"]]}];
+
+/* ================= 状态 ================= */
+const KEY="codedojo_v1";
+let S=load();
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.days)return s}catch(e){}return{days:{},cards:[],bugs:[],free:[]}}
+function save(){localStorage.setItem(KEY,JSON.stringify(S))}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("show"),2200)}
+function today(){return new Date().toISOString().slice(0,10)}
+function curDay(){for(const d of DAYS){if(!S.days[d.id]||!S.days[d.id].done)return d.id}return 7}
+function streak(){const ds=Object.values(S.days).filter(d=>d.done).map(d=>d.done).sort();if(!ds.length)return 0;let n=0;let day=today();
+ if(ds[ds.length-1]!==day){const y=new Date(Date.now()-864e5).toISOString().slice(0,10);if(ds[ds.length-1]!==y)return 0}
+ while(ds.includes(day)){n++;day=new Date(new Date(day).getTime()-864e5).toISOString().slice(0,10)}return n}
+
+/* ================= 导航 ================= */
+document.getElementById("nav").addEventListener("click",e=>{
+ const b=e.target.closest("button");if(!b)return;
+ document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");
+ document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
+ const v=document.getElementById("v-"+b.dataset.v);v.classList.add("active");
+ ({home:renderHome,camp:renderCamp,free:renderFree,cards:renderCards,bugs:renderBugs,road:renderRoad})[b.dataset.v]();
+ window.scrollTo(0,0);
+});
+function go(view){document.querySelector(`nav button[data-v="${view}"]`).click()}
+
+/* ================= 计时器 ================= */
+const TM={left:1200,total:1200,run:null,cb:null};
+function timerHTML(id){return `<div class="timer">
+ <div class="disp" id="d-${id}">20:00</div>
+ <div class="tbar"><i id="b-${id}"></i></div>
+ <button class="btn small" id="s-${id}" onclick="tmToggle('${id}')">开始</button>
+ <button class="btn ghost small" onclick="tmReset('${id}')">重置</button>
+</div><div class="timeup" id="u-${id}">时间到 — 关上代码，闭卷写三行总结</div>`}
+function fmt(s){return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")}
+function tmToggle(id){if(TM.run){clearInterval(TM.run);TM.run=null;document.getElementById("s-"+id).textContent="继续"}
+ else{document.getElementById("s-"+id).textContent="暂停";TM.cb=id;
+  TM.run=setInterval(()=>{TM.left--;const d=document.getElementById("d-"+TM.cb);if(!d){clearInterval(TM.run);TM.run=null;return}
+   d.textContent=fmt(TM.left);document.getElementById("b-"+TM.cb).style.width=(100*(TM.total-TM.left)/TM.total)+"%";
+   d.classList.toggle("hot",TM.left<=300);
+   if(TM.left<=0){clearInterval(TM.run);TM.run=null;document.getElementById("s-"+TM.cb).textContent="开始";document.getElementById("u-"+TM.cb).style.display="block";try{const c=new(window.AudioContext||window.webkitAudioContext)();const o=c.createOscillator();o.frequency.value=880;o.connect(c.destination);o.start();o.stop(c.currentTime+.3);setTimeout(()=>o.start(),400)}catch(e){}}
+  },1000)}}
+function tmReset(id){if(TM.run){clearInterval(TM.run);TM.run=null}TM.left=TM.total;TM.cb=id;const d=document.getElementById("d-"+id);d.textContent=fmt(TM.left);d.classList.remove("hot");document.getElementById("b-"+id).style.width="0";document.getElementById("s-"+id).textContent="开始";document.getElementById("u-"+id).style.display="none"}
+function tmSet(min,id){TM.total=TM.left=min*60;tmReset(id)}
+
+/* ================= 代码阅读器 ================= */
+const KW=/\b(def|class|import|from|return|if|elif|else|for|while|in|not|and|or|is|None|True|False|try|except|finally|with|as|async|await|yield|lambda|raise|pass|break|continue|global|nonlocal|assert|del|self|cls)\b/;
+function highlight(src){
+ const RE=/(#[^\n]*)|("""[\s\S]*?"""|'''[\s\S]*?'''|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*')|(\b\d+(?:\.\d+)?\b)|(\b(?:def|class|import|from|return|if|elif|else|for|while|in|not|and|or|is|None|True|False|try|except|finally|with|as|async|await|yield|lambda|raise|pass|break|continue|global|nonlocal|assert|del|self|cls)\b)/g;
+ let out="",last=0,m;
+ while((m=RE.exec(src))){
+  out+=esc(src.slice(last,m.index));
+  const cls=m[1]?"c":m[2]?"s":m[3]?"n":"k";
+  out+=`<span class="${cls}">${esc(m[0])}</span>`;last=RE.lastIndex}
+ out+=esc(src.slice(last));
+ return out.split("\n").map((l,i)=>`<tr><td class="ln">${i+1}</td><td>${l||" "}</td></tr>`).join("");
+}
+async function loadCode(path,boxId){
+ const box=document.getElementById(boxId);
+ box.innerHTML='<tr><td class="ln">…</td><td>加载中</td></tr>';
+ try{const r=await fetch(path);if(!r.ok)throw 0;const src=await r.text();
+  box.innerHTML=highlight(src);
+ }catch(e){box.innerHTML=`<tr><td class="ln">!</td><td>无法读取 ${esc(path)} — 请从 code-reading-dojo 目录启动本地服务器（双击 start.command）</td></tr>`}
+}
+
+/* ================= 今日 ================= */
+function renderHome(){
+ const cd=DAYS.find(d=>d.id===curDay()),done=S.days[cd.id]&&S.days[cd.id].done;
+ const doneCount=DAYS.filter(d=>S.days[d.id]&&S.days[d.id].done).length;
+ const weekCells=DAYS.map(d=>{const dn=S.days[d.id]&&S.days[d.id].done;return `<i class="${dn?"done":d.id===cd.id?"now":""}" title="Day ${d.id}"></i>`}).join("");
+ const todayCards=S.cards.filter(c=>c.date===today()).length;
+ const v=document.getElementById("v-home");
+ v.innerHTML=`
+ <h1>今日训练</h1><p class="sub">限时 + 闭卷产出，读得舒服等于没练。</p>
+ <div class="week">${weekCells}</div>
+ <div class="grid g4" style="margin:14px 0">
+  <div class="stat"><div class="num">${streak()}</div><div class="lbl">连续打卡（天）</div></div>
+  <div class="stat"><div class="num">${doneCount}/7</div><div class="lbl">第一周进度</div></div>
+  <div class="stat"><div class="num">${S.cards.length}</div><div class="lbl">语法卡片（${S.cards.filter(c=>!c.master).length} 张未掌握）</div></div>
+  <div class="stat"><div class="num">${S.bugs.length}</div><div class="lbl">病灶笔记</div></div>
+ </div>
+ <div class="card">
+  <div class="sub">今天的任务 · Day ${cd.id}</div>
+  <h2 style="margin:6px 0">${esc(cd.title)}</h2>
+  <p class="sub">${cd.lines?cd.lines+" 行 · ":""}${esc(cd.focus)}</p>
+  <p style="margin:10px 0">${esc(cd.brief)}</p>
+  ${done?`<span class="tag good">今日已完成 ✓</span> <button class="btn ghost small" onclick="openDay(${cd.id})">再练一遍</button>`
+        :`<button class="btn" onclick="openDay(${cd.id})">开始训练（约 30 分钟）</button>`}
+ </div>
+ <div class="card"><h3>训练流程</h3>
+  <div class="chk"><input type="checkbox" disabled checked><span>① 计时 20 分钟，只读一个文件，不懂的先猜再标记</span></div>
+  <div class="chk"><input type="checkbox" disabled checked><span>② 关上文件，闭卷写三行：文件意义 / 关键函数 / 没看懂的地方</span></div>
+  <div class="chk"><input type="checkbox" disabled checked><span>③ 重开对照，修正三行总结</span></div>
+  <div class="chk"><input type="checkbox" disabled checked><span>④ 每个没看懂的语法记一张卡片</span></div>
+ </div>
+ ${todayCards?`<p class="note">今天已记 ${todayCards} 张卡片</p>`:""}`;
+}
+
+/* ================= 训练营 ================= */
+function renderCamp(){
+ const cur=curDay();
+ document.getElementById("v-camp").innerHTML=`
+ <h1>训练营 · 第一周</h1><p class="sub">基于 requests 真实源码的逐日题卡。推荐按顺序，但允许自由跳。</p>
+ <div class="days">${DAYS.map(d=>{const dn=S.days[d.id]&&S.days[d.id].done;
+  return `<div class="daycard ${d.id===cur&&!dn?"now":""}" onclick="openDay(${d.id})">
+   <div class="d">Day ${d.id}</div><div class="t">${esc(d.title)}</div>
+   ${dn?'<div class="done">已完成 ✓</div>':d.lines?`<div class="sub">${d.lines} 行</div>`:'<div class="sub">回顾</div>'}
+  </div>`}).join("")}</div>
+ <div class="card" style="margin-top:16px"><h3>Week 2–8 用「自由训练」</h3>
+ <p class="sub">第一周结束后，去「自由训练」选文件继续（课表见「路线与资料」），闭卷三行和卡片同样生效。</p></div>`;
+}
+
+/* ================= Day 视图 ================= */
+let openDayId=null;
+function openDay(id){
+ const d=DAYS.find(x=>x.id===id);openDayId=id;
+ const st=S.days[id]||(S.days[id]={steps:[false,false,false,false],summary:{a:"",b:"",c:""},done:null});
+ const canDone=st.steps.every(Boolean);
+ const v=document.getElementById("v-camp");
+ v.innerHTML=`
+ <div class="back"><button class="btn ghost small" onclick="go('camp')">← 返回训练营</button></div>
+ <h1>Day ${d.id} · ${esc(d.title)}</h1>
+ <p class="sub">${d.lines?d.lines+" 行 · ":""}${esc(d.focus)}　${d.gh?`<a href="${d.gh}" target="_blank">GitHub 上看</a>`:""}${d.local?`　<span class="pill">${esc(d.local)}</span>`:""}</p>
+ <p style="margin:10px 0">${esc(d.brief)}</p>
+
+ ${d.id===6?`<div class="card"><h3>参考链路（先自己画完再展开不了——答案在下方问答里）</h3>
+  <p class="sub">顺序：${d.chain.map(c=>esc(c.split("（")[0])).join(" → ")}</p></div>`:""}
+
+ <div class="card"><h2>流程打卡</h2>
+  ${["计时 20 分钟，只读这个文件，不懂的先猜再标记","关上代码，闭卷写下方三行总结","重开代码，对照修正","把没看懂的语法记进卡片本"].map((t,i)=>
+  `<label class="chk"><input type="checkbox" ${st.steps[i]?"checked":""} onchange="stepCk(${id},${i},this.checked)"><span class="${st.steps[i]?"on":""}" id="sp-${id}-${i}">${t}</span></label>`).join("")}
+  <div style="margin-top:14px">${timerHTML("day")}</div>
+ </div>
+
+ ${d.file?`<div class="card"><h2>源码（真实文件）</h2>
+  <div class="codebox" style="margin-top:8px"><table><tbody id="code-day"></tbody></table></div>
+  <select style="margin-top:10px;max-width:420px" onchange="loadCode('../'+this.value,'code-day')">
+   ${FREE_FILES.map(f=>`<option value="${f.p}" data-gh="${f.gh}" ${f.p===d.file.replace("../","")?"selected":""}>${f.p}（${f.l} 行 · ${f.d}）</option>`).join("")}
+  </select>
+ </div>`:""}
+
+ <div class="card"><h2>闭卷三行总结 <span class="note">（先关掉上面的代码再写）</span></h2>
+  <h3>① 这个文件的存在意义（一句话）</h3><textarea id="sum-a" placeholder="例如：为整个库提供钩子分发机制…">${esc(st.summary.a)}</textarea>
+  <h3>② 最关键的函数 / 类，它做什么</h3><textarea id="sum-b">${esc(st.summary.b)}</textarea>
+  <h3>③ 我没看懂的地方（最多 3 个）</h3><textarea id="sum-c" placeholder="这里没看懂的地方，就是下一张卡片">${esc(st.summary.c)}</textarea>
+  <button class="btn small" style="margin-top:10px" onclick="saveSum(${id})">保存三行总结</button>
+ </div>
+
+ <div class="card"><h2>题目（读完再点开）</h2>
+  ${d.qs.map((q,i)=>`<div class="qa" id="qa-${i}"><div class="q" onclick="this.parentElement.classList.toggle('open')"><b>Q${i+1}</b><span>${esc(q.q)}</span></div><div class="a">${q.a}</div></div>`).join("")}
+ </div>
+
+ <div class="card"><h2>顺手记卡片</h2>
+  <div class="grid g3">
+   <input id="qc-topic" placeholder="语法点（如：dict comprehension）">
+   <input id="qc-src" placeholder="出处（如：hooks.py L26 / 官方 Tutorial 5.5）">
+  </div>
+  <textarea id="qc-desc" style="margin-top:8px" placeholder="我现在的理解（一句话）"></textarea>
+  <button class="btn small" style="margin-top:8px" onclick="quickCard('qc')">记卡片</button>
+ </div>
+
+ <div style="text-align:center;margin:20px 0">
+  <button class="btn" ${canDone?"":"disabled"} onclick="finishDay(${id})">${st.done?"已完成（可重复训练）":"完成今日训练"}</button>
+  ${canDone?"":'<p class="note" style="margin-top:8px">勾完四个流程步骤才能完成</p>'}
+ </div>`;
+ if(d.file)loadCode(d.file,"code-day");
+ document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
+ document.getElementById("v-camp").classList.add("active");
+ document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("active",x.dataset.v==="camp"));
+ window.scrollTo(0,0);
+}
+function stepCk(id,i,v){S.days[id].steps[i]=v;save();
+ const sp=document.getElementById(`sp-${id}-${i}`);if(sp)sp.classList.toggle("on",v);
+ const can=S.days[id].steps.every(Boolean);
+ const b=document.querySelector(`button[onclick="finishDay(${id})"]`);if(b)b.disabled=!can;}
+function saveSum(id){S.days[id].summary={a:sumv("sum-a"),b:sumv("sum-b"),c:sumv("sum-c")};save();toast("三行总结已保存")}
+function sumv(i){return document.getElementById(i).value.trim()}
+function finishDay(id){const first=!S.days[id].done;S.days[id].done=S.days[id].done||today();save();
+ toast(first?`Day ${id} 完成，连续 ${streak()} 天！`:"已更新");renderCamp();
+ if(first){const nx=DAYS.find(d=>d.id===id+1);if(nx)setTimeout(()=>openDay(nx.id),600)}}
+function quickCard(pfx){const t=document.getElementById(pfx+"-topic").value.trim();
+ if(!t){toast("语法点不能为空");return}
+ S.cards.unshift({id:Date.now(),topic:t,desc:document.getElementById(pfx+"-desc").value.trim(),src:document.getElementById(pfx+"-src").value.trim(),date:today(),master:false});
+ save();document.getElementById(pfx+"-topic").value="";document.getElementById(pfx+"-desc").value="";document.getElementById(pfx+"-src").value="";
+ toast("卡片已记入卡片本")}
+
+/* ================= 自由训练 ================= */
+function renderFree(){
+ document.getElementById("v-free").innerHTML=`
+ <h1>自由训练</h1><p class="sub">Week 2 起的主阵地：选一个真实文件，走同样的流程。</p>
+ <div class="card">
+  <h3>选文件</h3>
+  <select id="ff-sel" onchange="freePick()" style="max-width:520px">
+   ${["入门","进阶","挑战"].map(g=>`<optgroup label="${g}">${FREE_FILES.filter(f=>f.d===g).map(f=>`<option value="${f.p}" data-gh="${f.gh}">${f.p}（${f.l} 行）</option>`).join("")}</optgroup>`).join("")}
+  </select>
+  <div style="margin-top:8px"><a id="ff-gh" target="_blank" href="">GitHub 上看</a></div>
+  <h3>计时</h3>
+  <div>${timerHTML("ff")}</div>
+  <div style="margin-top:8px">
+   ${[15,20,30,45].map(m=>`<button class="btn ghost small" onclick="tmSet(${m},'ff')">${m} 分钟</button>`).join(" ")}
+  </div>
+ </div>
+ <div class="card"><h2>源码</h2><div class="codebox" style="margin-top:8px"><table><tbody id="code-ff"></tbody></table></div></div>
+ <div class="card"><h2>闭卷三行总结</h2>
+  <textarea id="fs-a" placeholder="① 文件的存在意义（一句话）"></textarea>
+  <textarea id="fs-b" style="margin-top:8px" placeholder="② 最关键的函数 / 类"></textarea>
+  <textarea id="fs-c" style="margin-top:8px" placeholder="③ 没看懂的地方"></textarea>
+  <button class="btn small" style="margin-top:10px" onclick="saveFree()">保存总结</button>
+ </div>
+ <div class="card"><h2>顺手记卡片</h2>
+  <div class="grid g3">
+   <input id="fc-topic" placeholder="语法点">
+   <input id="fc-src" placeholder="出处">
+  </div>
+  <textarea id="fc-desc" style="margin-top:8px" placeholder="我现在的理解（一句话）"></textarea>
+  <button class="btn small" style="margin-top:8px" onclick="quickCard('fc')">记卡片</button>
+ </div>
+ ${S.free.length?`<div class="card"><h3>历史总结（最近 10 条）</h3>
+  ${S.free.slice(0,10).map(f=>`<div style="border-bottom:1px solid rgba(50,54,59,.4);padding:8px 0"><b>${esc(f.file)}</b> <span class="note">${f.date}</span><div class="sub">${esc(f.a||"—")}</div></div>`).join("")}</div>`:""}`;
+ freePick();
+}
+function freePick(){const sel=document.getElementById("ff-sel");loadCode("../"+sel.value,"code-ff");document.getElementById("ff-gh").href=sel.selectedOptions[0].dataset.gh}
+function saveFree(){const file=document.getElementById("ff-sel").value,a=sumv("fs-a");
+ if(!a){toast("先写第①行");return}
+ S.free.unshift({file,a,b:sumv("fs-b"),c:sumv("fs-c"),date:today()});
+ const done=S.free.filter(f=>f.date===today()).length;
+ if(done>=1&&!S.freeDone){S.freeDone=today()}
+ save();document.getElementById("fs-a").value="";document.getElementById("fs-b").value="";document.getElementById("fs-c").value="";
+ toast("总结已保存（今日 "+done+" 次）")}
+
+/* ================= 卡片本 ================= */
+let cardFilter="all";
+function renderCards(){
+ const list=S.cards.filter(c=>cardFilter==="all"||(cardFilter==="no"?!c.master:c.master));
+ document.getElementById("v-cards").innerHTML=`
+ <h1>卡片本</h1><p class="sub">语法卡片台账：<b>语法点 | 我的理解 | 出处</b>。每周日过一遍，复述不出来的标回「未掌握」。</p>
+ <div class="card"><h2>新增卡片</h2>
+  <div class="grid g3">
+   <input id="nc-topic" placeholder="语法点（如：is None 惯用法）">
+   <input id="nc-src" placeholder="出处（如：api.py L75 / Fluent Python ch8）">
+  </div>
+  <textarea id="nc-desc" style="margin-top:8px" placeholder="我现在的理解（一句话）"></textarea>
+  <button class="btn small" style="margin-top:8px" onclick="quickCard('nc')">记卡片</button>
+ </div>
+ <div style="margin-bottom:12px">
+  ${[["all","全部 "+S.cards.length],["no","未掌握 "+S.cards.filter(c=>!c.master).length],["yes","已掌握 "+S.cards.filter(c=>c.master).length]].map(([k,t])=>
+  `<button class="btn small ${cardFilter===k?"":"ghost"}" onclick="cardFilter='${k}';renderCards()">${t}</button>`).join(" ")}
+ </div>
+ ${list.length?list.map(c=>`<div class="fcard ${c.master?"master":""}">
+  <div class="top"><span class="topic">${esc(c.topic)}</span><span class="tag ${c.master?"good":"warn"}">${c.master?"已掌握":"未掌握"}</span><span class="date">${c.date}</span></div>
+  ${c.desc?`<div class="desc">${esc(c.desc)}</div>`:""}
+  ${c.src?`<div class="src">出处：${esc(c.src)}</div>`:""}
+  <div class="ops">
+   <button class="btn ghost small" onclick="tgCard(${c.id})">${c.master?"标为未掌握":"标为已掌握"}</button>
+   <button class="btn ghost small" onclick="delCard(${c.id})">删除</button>
+  </div></div>`).join(""):'<div class="empty">还没有卡片 — 训练时遇到不懂的语法，随手记一张</div>'}`;
+}
+function tgCard(id){const c=S.cards.find(x=>x.id===id);c.master=!c.master;save();renderCards()}
+function delCard(id){S.cards=S.cards.filter(x=>x.id!==id);save();renderCards()}
+
+/* ================= 病灶笔记 ================= */
+function renderBugs(){
+ document.getElementById("v-bugs").innerHTML=`
+ <h1>病灶笔记</h1><p class="sub">AI 生成代码的八大高频病灶先背熟；训练中<b>漏掉的</b> bug 记在这里，漏掉的比找到的值钱。</p>
+ <div class="card"><h3>八大病灶速查</h3>
+  ${BUG_PATTERNS.map((b,i)=>`<div class="chk"><input type="checkbox" disabled><span>${i+1} · ${esc(b)}</span></div>`).join("")}
+ </div>
+ <div class="card"><h2>新增病灶记录</h2>
+  <input id="nb-symp" placeholder="症状（如：except Exception: pass 吞掉了超时错误）">
+  <textarea id="nb-ctx" style="margin-top:8px" placeholder="在哪个文件 / 什么场景遇到的"></textarea>
+  <textarea id="nb-lesson" style="margin-top:8px" placeholder="教训：下次先查什么"></textarea>
+  <button class="btn small" style="margin-top:8px" onclick="addBug()">记录</button>
+ </div>
+ ${S.bugs.length?S.bugs.map(b=>`<div class="fcard" style="border-left-color:var(--bad)">
+  <div class="top"><span class="topic">${esc(b.symp)}</span><span class="tag bad">病灶</span><span class="date">${b.date}</span></div>
+  ${b.ctx?`<div class="desc">${esc(b.ctx)}</div>`:""}
+  ${b.lesson?`<div class="src">教训：${esc(b.lesson)}</div>`:""}
+  <div class="ops"><button class="btn ghost small" onclick="delBug(${b.id})">删除</button></div>
+ </div>`).join(""):'<div class="empty">还没有病灶记录</div>'}`;
+}
+function addBug(){const s=document.getElementById("nb-symp").value.trim();if(!s){toast("症状不能为空");return}
+ S.bugs.unshift({id:Date.now(),symp:s,ctx:document.getElementById("nb-ctx").value.trim(),lesson:document.getElementById("nb-lesson").value.trim(),date:today()});
+ save();renderBugs();toast("已记录")}
+function delBug(id){S.bugs=S.bugs.filter(x=>x.id!==id);save();renderBugs()}
+
+/* ================= 路线与资料 ================= */
+function renderRoad(){
+ document.getElementById("v-road").innerHTML=`
+ <h1>八周课表</h1><p class="sub">完整计划与项目分级清单见 <span class="pill">code-reading-dojo/训练手册.md</span></p>
+ <div class="card"><table class="plain"><tr><th>周</th><th>材料</th><th>目标</th></tr>
+  ${ROADMAP.map(r=>`<tr><td>W${r.w}</td><td>${esc(r.t)}</td><td class="sub">${esc(r.g)}</td></tr>`).join("")}
+ </table></div>
+ ${RESOURCES.map(g=>`<div class="card"><h2>${esc(g.g)}</h2><div class="links">
+  ${g.items.map(([t,u,d])=>`<a href="${u}" target="_blank">${esc(t)} <span class="note">— ${esc(d)}</span></a>`).join("")}
+ </div></div>`).join("")}`;
+}
+
+/* ================= 启动 ================= */
+document.getElementById("streakN").textContent=streak();
+document.getElementById("doneN").textContent="已完成 "+DAYS.filter(d=>S.days[d.id]&&S.days[d.id].done).length+" 天";
+renderHome();
+</script>
+</body>
+</html>
